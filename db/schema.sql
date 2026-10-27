@@ -72,3 +72,13 @@ CREATE TABLE IF NOT EXISTS trade_events (
   UNIQUE(user_id, broker_account_id, symbol, candle_time)
 );
 CREATE INDEX IF NOT EXISTS trade_events_user_created_idx ON trade_events(user_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS admin_news (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL CHECK (char_length(title) BETWEEN 1 AND 160),
+  body TEXT NOT NULL CHECK (char_length(body) BETWEEN 1 AND 5000),
+  published BOOLEAN NOT NULL DEFAULT TRUE,
+  created_by TEXT NOT NULL DEFAULT 'admin',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS admin_news_published_idx ON admin_news(published, created_at DESC);
