@@ -82,3 +82,6 @@ CREATE TABLE IF NOT EXISTS admin_news (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS admin_news_published_idx ON admin_news(published, created_at DESC);
+
+-- Enforce at most one active MetaApi account association per subscriber.
+CREATE UNIQUE INDEX IF NOT EXISTS broker_accounts_one_active_per_user_idx ON broker_accounts(user_id) WHERE status <> 'revoked';
