@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request) {
+  let createdMetaAccount = null;
   try {
     const user = await requireUser();
     await requireSubscription(user.id);
@@ -36,6 +37,7 @@ export async function POST(request) {
       quoteStreamingIntervalInSeconds: 2.5,
       reliability: "high"
     });
+    createdMetaAccount = account;
     const configLink = await account.createConfigurationLink();
     await query(
       `INSERT INTO broker_accounts (user_id, metaapi_account_id, broker_server, account_mode, real_trading_consent_at, status)
@@ -49,7 +51,8 @@ export async function POST(request) {
       message: "Complete the MetaApi-hosted account configuration. NexusFX does not store your MT5 password."
     }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    if (error?.code === "23505") return Response.json({ error: "That MetaApi account is already linked." }, { status: 409 });
+    if (createdMetaAccount) await createdMetaAccount.remove().catch(() => {});
+    if (error?.code === "23505") return Response.json({ error: "An MT5 account is already linked to this subscriber, or this MetaApi account is already linked." }, { status: 409 });
     return authError(error);
   }
 }
