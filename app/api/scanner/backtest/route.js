@@ -1,4 +1,4 @@
-import MetaApi from "metaapi.cloud-sdk";
+import MetaApi from "metaapi.cloud-sdk/esm-node";
 import { backtestCandles } from "../../../../lib/backtest.js";
 
 export const runtime = "nodejs";
