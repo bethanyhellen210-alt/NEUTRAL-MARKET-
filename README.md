@@ -1,23 +1,53 @@
 # NexusFX
 
-NexusFX is a Forex automation platform scaffold built for Vercel, with MetaApi as the MT5 connectivity layer. The MT5 terminal is not required on the Vercel host.
+NexusFX is a Next.js Forex analysis workspace intended for Vercel hosting, using MetaApi as the MT5 cloud connectivity layer. An MT5 terminal is not required on the Vercel host.
 
-## Included in the initial scaffold
-- Robot-led subscription/access landing page (weekly 100, monthly 400, yearly 1,000; currency must be confirmed before payments are enabled).
-- Dashboard, Auto Trade, Scanner, Broker, Settings and admin-managed News sections.
-- Explicit Demo/Real mode selection; live trading stays disabled until broker connectivity, strategy, and risk controls are verified.
-- Server-only MetaApi environment variables; no tokens in browser code.
+## Implemented in this repository
+- Responsive robot-themed black/gold landing page and provisional weekly/monthly/yearly plan cards.
+- Workspace navigation: Dashboard, Auto Trade, Scanner, Broker, Settings, News.
+- EMA(20)/EMA(50), RSI(14), ATR(14) technical setup engine.
+- Scanner API reads historical MT5 candles through the official MetaApi Node SDK, rejects unsupported symbol/timeframe inputs, and excludes the still-forming candle.
+- Conservative OHLC backtest endpoint with win rate, profit factor, expectancy in R, net R and maximum drawdown in R.
+- Unit tests and GitHub Actions build/test workflow.
+- Order execution remains locked; the UI does not fabricate account balances, signals, trades or payment confirmations.
 
-## Deploy
-1. Import this repository into Vercel.
-2. Use the default Next.js build settings (`npm run build`).
-3. Add server-side environment variables from `.env.example` in Vercel.
-4. Redeploy after adding variables.
+## Required Vercel environment variables
+Set these under **Project → Settings → Environment Variables**:
 
-## MetaApi setup
-Create/authorize an MT5 account in your MetaApi account, then set `METAAPI_TOKEN` and `METAAPI_ACCOUNT_ID` in Vercel. Do not expose the token to the browser. Account data must be fetched and validated from MetaApi before being shown as live.
+- `METAAPI_TOKEN`: server-side MetaApi API token.
+- `METAAPI_ACCOUNT_ID`: MT5 account already added and deployed in MetaApi.
+- `NEXUSFX_ADMIN_SECRET`: reserve for a future protected admin API.
+- `DATABASE_URL`: reserve for persistent users, licenses and admin news.
+- `PAYSTACK_SECRET_KEY`, `PAYSTACK_PUBLIC_KEY`: reserve for payment integration after currency/checkout requirements are confirmed.
+- `APP_BASE_URL`: deployed application origin.
 
-## Important status
-The initial UI scaffold does not yet place real orders, verify payments, or authenticate users against a database. Those features require the next implementation steps: persistent database/auth, verified Paystack checkout/webhooks, MetaApi account-state endpoints, strategy testing, and order/risk controls. Never enable live trading until demo execution and protective limits are tested.
+Never put MetaApi tokens or payment secret keys in browser code or commit real secrets to GitHub.
 
-Subscription price numbers are provisional and have no currency attached yet. Payment processing is intentionally not enabled until the currency and checkout requirements are confirmed.
+## Scanner setup
+1. Create/authorize the MT5 account in MetaApi and wait for it to be deployed and connected.
+2. Add `METAAPI_TOKEN` and `METAAPI_ACCOUNT_ID` in Vercel.
+3. Redeploy.
+4. Open Scanner, choose a supported symbol/timeframe and run analysis. If the broker uses a different symbol suffix (for example, `EURUSD.a`), configure the broker's exact symbol mapping before scanning that instrument.
+
+The strategy currently uses:
+- EMA 20 / EMA 50 for trend direction.
+- RSI 14 for momentum confirmation.
+- Closed-candle direction for confirmation.
+- ATR 14 for reference stop-loss and take-profit distances (1.5 × ATR and 2 × ATR).
+
+A BUY/SELL is a technical setup, not a probability of profit. The setup score is condition agreement only, not a calibrated probability.
+
+## Backtesting limitations
+The backtest enters at the next candle open, uses ATR-based stops/targets, and conservatively assumes stop-loss first if both stop and target are touched in the same candle. It does not model spread, commission, swap, slippage, latency, or broker execution. Backtest results are not proof of future profitability; use out-of-sample testing and demo forward-testing before considering live trading.
+
+## Still required before this is a complete commercial auto-trader
+- Secure user registration/session authentication and per-user broker account ownership.
+- Persistent database and protected admin news publishing.
+- Verified access-key licenses and subscription entitlement checks.
+- Payment checkout plus server-verified webhooks; displayed prices are provisional until currency is confirmed.
+- Broker-backed account dashboard with authorization checks.
+- Strategy backtesting across multiple market regimes and realistic trading costs.
+- Demo-only order execution with server-side risk limits, idempotency, order reconciliation, kill switch, and tested stop-loss/target placement.
+- Explicit real-account enablement after demo validation and account-mode verification.
+
+Live order execution is intentionally disabled until these security and risk controls are implemented. Do not enable it by bypassing the lock.
