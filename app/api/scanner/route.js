@@ -1,4 +1,4 @@
-import MetaApi from "metaapi.cloud-sdk";
+import MetaApi from "metaapi.cloud-sdk/esm-node";
 import { analyzeCandles } from "../../../lib/strategy.js";
 
 export const runtime = "nodejs";
