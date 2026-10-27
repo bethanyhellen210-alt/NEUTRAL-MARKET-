@@ -42,3 +42,21 @@ test("flat candles do not generate a directional entry", () => {
   const result = analyzeCandles(makeCandles(100, 0));
   assert.equal(result.signal, "WAIT");
 });
+
+import { backtestCandles } from "../lib/backtest.js";
+
+test("backtest reports insufficient data rather than inventing performance", () => {
+  const result = backtestCandles(makeCandles(40, 0.0002));
+  assert.equal(result.status, "insufficient_data");
+  assert.equal(result.winRate, null);
+});
+
+test("backtest reports explicit assumptions and bounded metrics", () => {
+  const result = backtestCandles(makeCandles(120, 0.0002));
+  assert.ok(["complete", "insufficient_data"].includes(result.status));
+  if (result.status === "complete") {
+    assert.ok(result.trades >= 0);
+    assert.ok(result.winRate === null || (result.winRate >= 0 && result.winRate <= 100));
+    assert.ok(Array.isArray(result.assumptions));
+  }
+});
