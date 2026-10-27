@@ -46,7 +46,14 @@ export async function GET(request) {
       undefined,
       250
     );
-    const analysis = analyzeCandles(candles || []);
+    const timeframeMs = ({ "5m": 300000, "15m": 900000, "30m": 1800000, "1h": 3600000, "4h": 14400000 })[timeframe];
+    const now = Date.now();
+    // Avoid signals based on a candle that is still forming (which can repaint).
+    const closedCandles = (candles || []).filter(candle => {
+      const openedAt = new Date(candle.time).getTime();
+      return Number.isFinite(openedAt) && openedAt + timeframeMs <= now;
+    });
+    const analysis = analyzeCandles(closedCandles);
     return Response.json({
       connected: true,
       source: "MetaApi MT5 historical candles",
