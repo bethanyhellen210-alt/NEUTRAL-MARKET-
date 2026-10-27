@@ -12,9 +12,9 @@ const nav = [
 ];
 
 const plans = [
-  { name: "Weekly", price: "100", duration: "7 days" },
-  { name: "Monthly", price: "400", duration: "30 days", popular: true },
-  { name: "Yearly", price: "1,000", duration: "365 days" },
+  { name: "Weekly", price: "$100", duration: "7 days" },
+  { name: "Monthly", price: "$400", duration: "30 days", popular: true },
+  { name: "Yearly", price: "$1,000", duration: "365 days" },
 ];
 
 export default function Home() {
@@ -203,7 +203,7 @@ export default function Home() {
         <div className="plans-column"><div className="plan-heading"><span className="eyebrow">MEMBERSHIP</span><h2>Choose your access</h2><p>Unlock your workspace with a plan or access key.</p></div>
           <div className="plans">{plans.map(plan=><button key={plan.name} className={selectedPlan===plan.name?"plan-card chosen":"plan-card"} onClick={()=>setSelectedPlan(plan.name)}><span className="plan-top"><span>{plan.name}</span>{plan.popular&&<em>POPULAR</em>}</span><span className="plan-price">{plan.price}<small> / {plan.duration}</small></span><span className="plan-foot">{selectedPlan===plan.name?"Selected plan":"Choose plan"} <b>→</b></span></button>)}</div>
           <div className="currency-note">Currency and checkout are not enabled yet. Prices are provisional.</div>
-          <button className="primary full large-button" onClick={()=>{setPage("login");setMessage("Selected "+selectedPlan+" plan. Payment activation requires confirmed currency and verified checkout.");}}>Continue with {selectedPlan} <span>→</span></button>
+          <button className="primary full large-button" onClick={()=>{setPage("login");setMessage("Selected "+selectedPlan+" plan in USD. Secure checkout and subscription activation are not enabled until payment verification and persistent licensing are configured.");}}>Continue with {selectedPlan} <span>→</span></button>
           <div className="key-divider"><span></span> OR USE ACCESS KEY <span></span></div>
           <button className="outline full" onClick={()=>{setPage("login");setMessage("");}}> <span>♢</span> Enter access key</button>
           <p className="fine-print">Subscription and access-key verification will be handled securely by the server. No payment has been taken.</p>
