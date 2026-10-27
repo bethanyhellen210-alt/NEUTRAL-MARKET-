@@ -1,66 +1,86 @@
 # NexusFX
 
-NexusFX is a Next.js Forex analysis workspace intended for Vercel hosting, using MetaApi as the MT5 cloud connectivity layer. An MT5 terminal is not required on the Vercel host.
+NexusFX is a Next.js subscriber platform for MT5 analysis and automated trading through MetaApi. It is designed for Vercel hosting; no local MT5 terminal is needed on the Vercel host.
 
-## Implemented in this repository
-- Responsive robot-themed black/gold landing page with USD plans: $100 weekly, $400 monthly, and $1,000 yearly.
-- Workspace navigation: Dashboard, Auto Trade, Scanner, Broker, Settings, News.
-- EMA(20)/EMA(50), RSI(14), ATR(14) technical setup engine.
-- Scanner API reads historical MT5 candles through the official MetaApi Node SDK, rejects unsupported symbol/timeframe inputs, and excludes the still-forming candle.
-- Conservative OHLC backtest endpoint with win rate, profit factor, expectancy in R, net R and maximum drawdown in R.
-- Unit tests and GitHub Actions build/test workflow.
-- Order execution remains locked; the UI does not fabricate account balances, signals, trades or payment confirmations.
+## Implemented in the repository
 
-## Required Vercel environment variables
-Set these under **Project → Settings → Environment Variables**:
+- Responsive black/gold landing page with USD plan prices: $100 weekly, $400 monthly, and $1,000 yearly.
+- Subscriber registration/login with bcrypt password hashing, hashed random server-side sessions, and HTTP-only cookies.
+- PostgreSQL schema for users, sessions, USD subscriptions, subscriber-owned MetaApi accounts, trading settings, and trade event audit records.
+- Paystack checkout initialization for USD, plus a signed webhook that independently verifies the payment with Paystack and checks reference, amount, currency and metadata before activating a subscription.
+- Per-subscriber MetaApi account provisioning using a MetaApi-hosted configuration link. NexusFX does not receive or store the subscriber's MT5 password.
+- Broker status/dashboard API returns account balance, equity, open positions and position P/L only for the authenticated owner's linked account.
+- EMA(20)/EMA(50), RSI(14), ATR(14) technical strategy and closed-candle analysis.
+- Authenticated scanner and backtest endpoints scoped to the subscriber's own linked account.
+- Per-user auto-trading settings, fixed-volume cap, maximum position cap, daily-loss stop, duplicate-candle protection, broker response recording, and an emergency stop that prevents new entries.
+- Vercel Cron route for the scheduled engine, guarded by a server-side bearer secret. Real order submission requires both platform-wide and user-level live-trading enablement.
 
-- `METAAPI_TOKEN`: server-side MetaApi API token.
-- `METAAPI_ACCOUNT_ID`: MT5 account already added and deployed in MetaApi.
-- `NEXUSFX_ADMIN_SECRET`: required for `/admin`; use a long random secret. The server issues a signed HTTP-only admin session.
-- `DATABASE_URL`: required for persistent users, licenses, subscriptions and admin news (database-backed management is not implemented yet).
-- `PAYSTACK_SECRET_KEY`, `PAYSTACK_PUBLIC_KEY`: payment provider credentials; confirm that your Paystack account is enabled to accept USD before enabling checkout.
-- `PAYSTACK_CURRENCY`: `USD` for the requested pricing (provider/account eligibility must be confirmed).
-- `APP_BASE_URL`: absolute deployed URL, e.g. `https://your-project.vercel.app`.
-- `APP_BASE_URL`: deployed application origin.
+## Important production gate
 
-Never put MetaApi tokens or payment secret keys in browser code or commit real secrets to GitHub.
+**Real trading is disabled by default.** Do not change `LIVE_TRADING_ENABLED` to `true` until the database is migrated, MetaApi is configured, Paystack USD acceptance is confirmed, a real account has been linked and verified, and the order/risk controls have been validated using a controlled operational test. This code is not a guarantee of profitability and is not yet independently audited. Vercel Cron runs the engine every five minutes; it is not a tick-by-tick execution service.
 
-## Admin setup
-1. In Vercel, set `NEXUSFX_ADMIN_SECRET` to a long random value and redeploy.
-2. Open `https://YOUR-DEPLOYMENT.vercel.app/admin` and enter that secret.
-3. The current admin page verifies a signed HTTP-only session. It is an initial secure sign-in shell only; it does not yet manage news, access keys, customers, or payments because database-backed CRUD and webhook verification are still pending.
+## Deployment
 
-## Vercel deployment
-- Import `bethanyhellen210-alt/NEUTRAL-MARKET-` into Vercel and keep the framework preset as Next.js.
-- Build command: `npm run build` (default).
-- Install command: `npm install` (default).
-- Deploy from a terminal with `npx vercel --prod` after running `npx vercel login` and linking the project with `npx vercel`.
+1. Import `bethanyhellen210-alt/NEUTRAL-MARKET-` into Vercel as a Next.js project.
+2. Create a managed PostgreSQL database (for example, Neon or another PostgreSQL provider).
+3. Run `db/schema.sql` against that database before using the portal.
+4. Set the environment variables below in Vercel Project Settings → Environment Variables.
+5. Deploy and open `/portal` to register a subscriber account.
+6. Confirm a Paystack USD transaction can be initialized and successfully verified before offering paid subscriptions.
+7. Keep live execution disabled while validating account provisioning and settings.
 
-## Scanner setup
-1. Create/authorize the MT5 account in MetaApi and wait for it to be deployed and connected.
-2. Add `METAAPI_TOKEN` and `METAAPI_ACCOUNT_ID` in Vercel.
-3. Redeploy.
-4. Open Scanner, choose a supported symbol/timeframe and run analysis. If the broker uses a different symbol suffix (for example, `EURUSD.a`), configure the broker's exact symbol mapping before scanning that instrument.
+Terminal commands, after installing Node.js and linking Vercel:
 
-The strategy currently uses:
-- EMA 20 / EMA 50 for trend direction.
-- RSI 14 for momentum confirmation.
-- Closed-candle direction for confirmation.
-- ATR 14 for reference stop-loss and take-profit distances (1.5 × ATR and 2 × ATR).
+```bash
+npx vercel login
+npx vercel link
+npx vercel --prod
+```
 
-A BUY/SELL is a technical setup, not a probability of profit. The setup score is condition agreement only, not a calibrated probability.
+## Environment variables
 
-## Backtesting limitations
-The backtest enters at the next candle open, uses ATR-based stops/targets, and conservatively assumes stop-loss first if both stop and target are touched in the same candle. It does not model spread, commission, swap, slippage, latency, or broker execution. Backtest results are not proof of future profitability; use out-of-sample testing and demo forward-testing before considering live trading.
+- `DATABASE_URL`: managed PostgreSQL connection string.
+- `METAAPI_TOKEN`: server-side MetaApi token with account provisioning and trading permissions.
+- `NEXUSFX_ADMIN_SECRET`: random secret for the admin sign-in shell.
+- `CRON_SECRET` and `NEXUSFX_ENGINE_SECRET`: set to the same long random value; Vercel Cron sends the bearer token from `CRON_SECRET`.
+- `LIVE_TRADING_ENABLED`: keep `false` until live execution is intentionally approved.
+- `PAYSTACK_SECRET_KEY`: server-side payment secret.
+- `PAYSTACK_PUBLIC_KEY`: payment provider public key for future client-side payment components.
+- `PAYSTACK_CURRENCY`: `USD`; confirm the Paystack account supports USD transactions.
+- `APP_BASE_URL`: deployed HTTPS origin, e.g. `https://your-project.vercel.app`.
 
-## Still required before this is a complete commercial auto-trader
-- Secure user registration/session authentication and per-user broker account ownership.
-- Persistent database and protected admin news publishing.
-- Verified access-key licenses and subscription entitlement checks.
-- USD payment checkout, server-verified webhooks and persistent subscription activation.
-- Broker-backed account dashboard with authorization checks.
-- Strategy backtesting across multiple market regimes and realistic trading costs.
-- Demo-only order execution with server-side risk limits, idempotency, order reconciliation, kill switch, and tested stop-loss/target placement.
-- Explicit real-account enablement after demo validation and account-mode verification.
+Never place MetaApi tokens, Paystack secret keys, database credentials or engine secrets in browser code or GitHub.
 
-Live order execution is intentionally disabled until these security and risk controls are implemented. Do not enable it by bypassing the lock.
+## Subscriber and broker flow
+
+1. Subscriber registers at `/portal`.
+2. Subscriber chooses a plan; checkout creates a pending subscription.
+3. Paystack webhook signature is checked and the transaction is independently verified. Only matching successful USD payments activate a subscription.
+4. Subscriber connects an MT5 account. NexusFX creates a MetaApi account under its server-side MetaApi tenant and returns a MetaApi-hosted configuration link for the subscriber to enter credentials. Broker passwords are not saved by NexusFX.
+5. Broker and scanner endpoints query only the MetaApi account ID associated with the current authenticated user.
+6. Subscriber configures symbol, timeframe, fixed lot size, max open positions and daily-loss threshold.
+7. Scheduled order execution requires all of: active verified subscription, own linked account marked connected, explicit real-account consent, user-level auto/live flags, and `LIVE_TRADING_ENABLED=true`.
+
+## Trading engine and limits
+
+- Signals use EMA20/EMA50 trend, RSI14 momentum, closed-candle confirmation and ATR14 reference stop/target distances.
+- Fixed lot size is restricted to 0.01–0.10 lots; maximum open positions is restricted to 1–3.
+- Daily loss stop is configurable from 0.5% to 2% of current balance, using realized deals plus floating P/L returned by the broker. It disables new automatic entries when hit.
+- Existing positions are not automatically closed by the emergency stop.
+- A unique database key blocks repeat submissions for the same subscriber/account/symbol/candle. If broker submission times out, the event is marked uncertain and must be reconciled against MT5 before retrying.
+- Broker response codes are recorded; a submitted request is not treated as a guaranteed fill.
+- Spread, commission, swaps, slippage, gaps, broker-specific stop-distance constraints and execution latency can materially change outcomes. The daily loss check is not a guaranteed maximum loss.
+- The strategy score is condition agreement, not a calibrated probability of profit.
+
+## Remaining operational work before enabling real money
+
+- Run the schema migration and validate database backups, connection pooling, and account/session recovery.
+- Add email verification, password reset, abuse/rate limiting and account recovery controls.
+- Verify Paystack USD eligibility and complete end-to-end successful, failed, duplicate and refunded payment tests.
+- Validate MetaApi hosted account configuration, supported broker symbols, actual trade result codes, stop-level rules, and all broker-specific volume/contract specifications.
+- Add independent operational monitoring, incident alerts, webhook replay controls, support workflows, and an external security review.
+- Forward-test strategy and loss controls on demo accounts before enabling real trading for subscribers.
+
+## Admin
+
+The `/admin` page currently provides a signed HTTP-only admin session shell. Database-backed admin screens for customer lookup, news publishing, access-key management, manual subscription actions and audit review still need to be built. Do not represent those features as complete yet.
