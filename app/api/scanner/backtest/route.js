@@ -1,5 +1,5 @@
 import MetaApi from "metaapi.cloud-sdk";
-import { backtestCandles } from "../../../lib/backtest.js";
+import { backtestCandles } from "../../../../lib/backtest.js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
