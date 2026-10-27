@@ -9,7 +9,7 @@ const FRAME_MS = { "5m": 300000, "15m": 900000, "30m": 1800000, "1h": 3600000, "
 const SYMBOLS = new Set(["EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD", "USDCAD", "NZDUSD", "XAUUSD"]);
 
 export async function GET(request) {
-  const secret = process.env.NEXUSFX_ENGINE_SECRET;
+  const secret = process.env.CRON_SECRET || process.env.NEXUSFX_ENGINE_SECRET;
   const auth = request.headers.get("authorization") || "";
   if (!secret || auth !== `Bearer ${secret}`) return Response.json({ error: "Unauthorized." }, { status: 401 });
   if (process.env.LIVE_TRADING_ENABLED !== "true") {
