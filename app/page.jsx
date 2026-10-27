@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const nav = [
   ["dashboard", "⌂", "Dashboard"],
@@ -30,6 +30,9 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [theme, setTheme] = useState("gold");
   const [brokerStatus, setBrokerStatus] = useState("Not connected");
+  const [scannerResult, setScannerResult] = useState(null);
+  const [scannerLoading, setScannerLoading] = useState(false);
+  const [scannerTimeframe, setScannerTimeframe] = useState("15m");
   const [newsItems, setNewsItems] = useState([
     { title: "Welcome to NexusFX", body: "Admin announcements will appear here once the news service is configured.", date: "Platform notice" },
   ]);
@@ -52,6 +55,33 @@ export default function Home() {
     setAutoEnabled(false);
     setMessage("Auto Trade is not armed: connect a MetaApi MT5 account and complete strategy/risk validation first. No orders were placed.");
   };
+
+
+  useEffect(() => {
+    if (tab !== "scanner") return;
+    let cancelled = false;
+    let timer;
+    const loadAnalysis = async () => {
+      setScannerLoading(true);
+      try {
+        const response = await fetch(`/api/scanner?symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(scannerTimeframe)}`, { cache: "no-store" });
+        const data = await response.json();
+        if (!cancelled) setScannerResult({ ...data, httpOk: response.ok });
+      } catch {
+        if (!cancelled) setScannerResult({ connected: false, signal: "WAIT", error: "Unable to reach the scanner API." });
+      } finally {
+        if (!cancelled) {
+          setScannerLoading(false);
+          timer = setTimeout(loadAnalysis, 60000);
+        }
+      }
+    };
+    loadAnalysis();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [tab, symbol, scannerTimeframe]);
 
   const tabContent = useMemo(() => {
     if (tab === "dashboard") return (
@@ -109,8 +139,29 @@ export default function Home() {
     );
     if (tab === "scanner") return (
       <section className="panel">
-        <div className="eyebrow">MARKET ANALYSIS</div><h2>Scanner</h2><p className="muted">Signal generation is waiting for a live market-data provider. No fabricated BUY/SELL signals are displayed.</p>
-        <div className="table-wrap"><table><thead><tr><th>Symbol</th><th>Market feed</th><th>Signal</th><th>Entry status</th></tr></thead><tbody>{["EURUSD","GBPUSD","USDJPY","XAUUSD"].map(s => <tr key={s}><td>{s}</td><td><span className="status-dot"></span> Not connected</td><td><span className="tag">WAIT</span></td><td>Awaiting live data</td></tr>)}</tbody></table></div>
+        <div className="eyebrow">LIVE MARKET ANALYSIS</div>
+        <div className="panel-head"><h2>Scanner</h2><span className={scannerResult?.connected ? "tag" : "tag warning"}>{scannerResult?.connected ? "METAAPI CONNECTED" : "DATA PENDING"}</span></div>
+        <p className="muted">Signals are calculated from MT5 candles through MetaApi. This scanner provides technical setups, not guaranteed outcomes or automatic orders.</p>
+        <div className="scanner-controls">
+          <div><label className="field-label" htmlFor="scannerSymbol">Symbol</label><select id="scannerSymbol" value={symbol} onChange={e => setSymbol(e.target.value)}><option>EURUSD</option><option>GBPUSD</option><option>USDJPY</option><option>USDCHF</option><option>AUDUSD</option><option>USDCAD</option><option>NZDUSD</option><option>XAUUSD</option></select></div>
+          <div><label className="field-label" htmlFor="scannerTimeframe">Timeframe</label><select id="scannerTimeframe" value={scannerTimeframe} onChange={e => setScannerTimeframe(e.target.value)}><option value="5m">M5</option><option value="15m">M15</option><option value="30m">M30</option><option value="1h">H1</option><option value="4h">H4</option></select></div>
+          <button className="outline scan-refresh" onClick={() => {setScannerResult(null);setTab("dashboard");setTimeout(()=>setTab("scanner"),0);}}>Refresh analysis</button>
+        </div>
+        {scannerLoading && <p className="muted">Requesting latest candles and recalculating indicators…</p>}
+        {scannerResult?.error && <p className="inline-message">{scannerResult.error} {scannerResult.detail || ""}</p>}
+        <div className="signal-summary">
+          <div><span className="eyebrow">CURRENT SETUP</span><strong className={scannerResult?.signal === "BUY" ? "signal-buy" : scannerResult?.signal === "SELL" ? "signal-sell" : "signal-wait"}>{scannerResult?.signal || "WAIT"}</strong><small>{scannerResult?.setupScore ?? 0}% condition agreement · not win probability</small></div>
+          <div><span className="eyebrow">CANDLES ANALYZED</span><strong>{scannerResult?.candleCount ?? "—"}</strong><small>{scannerResult?.timeframe || scannerTimeframe} · {scannerResult?.symbol || symbol}</small></div>
+        </div>
+        <p className="scanner-reason">{scannerResult?.reason || "Waiting for live market data. Configure MetaApi on the server to analyze real MT5 candles."}</p>
+        <div className="stats-grid scanner-indicators">
+          <Metric label="EMA 20" value={scannerResult?.indicators?.ema20 ?? "—"} note="Short trend" />
+          <Metric label="EMA 50" value={scannerResult?.indicators?.ema50 ?? "—"} note="Longer trend" />
+          <Metric label="RSI 14" value={scannerResult?.indicators?.rsi14 ?? "—"} note="Momentum" />
+          <Metric label="ATR 14" value={scannerResult?.indicators?.atr14 ?? "—"} note="Volatility" />
+        </div>
+        {scannerResult?.levels && <div className="stats-grid scanner-indicators"><Metric label="Entry reference" value={scannerResult.levels.entry} note="Last analyzed candle close" /><Metric label="Stop loss reference" value={scannerResult.levels.stopLoss} note="1.5 × ATR" /><Metric label="Take profit reference" value={scannerResult.levels.takeProfit} note="2 × ATR" /><Metric label="Risk / reward" value={scannerResult.levels.riskReward} note="Before spread and costs" /></div>}
+        <p className="fine-print">Technical analysis can fail. Levels are reference estimates, not a broker-validated order. No trade is executed by the scanner.</p>
       </section>
     );
     if (tab === "broker") return (
@@ -128,7 +179,7 @@ export default function Home() {
     if (tab === "settings") return <section className="panel"><div className="eyebrow">PERSONALIZE WORKSPACE</div><h2>Settings</h2><p className="muted">Choose your accent colour.</p><div className="theme-options">{[["gold","#e7c66d","Gold"],["blue","#75baff","Blue"],["mint","#80d6a1","Mint"]].map(([id,color,label])=><button key={id} className={theme===id?"theme-choice active":"theme-choice"} onClick={()=>setTheme(id)}><span style={{background:color}}></span>{label}</button>)}</div><div className="risk-note"><strong>Security</strong><span>Authentication, subscription management and API secrets will be managed server-side; never paste a MetaApi token into this page.</span></div></section>;
     if (tab === "news") return <section className="panel"><div className="eyebrow">ADMIN ANNOUNCEMENTS</div><h2>News & Updates</h2><p className="muted">Updates published by the NexusFX administrator will appear here.</p>{newsItems.map((n,i)=><article className="news-card" key={i}><span className="eyebrow">{n.date}</span><h3>{n.title}</h3><p>{n.body}</p></article>)}</section>;
     return null;
-  }, [tab, accountMode, maxTrades, lotSize, symbol, message, brokerStatus, theme, titleMode, newsItems]);
+  }, [tab, accountMode, maxTrades, lotSize, symbol, message, brokerStatus, theme, titleMode, newsItems, scannerResult, scannerLoading, scannerTimeframe]);
 
   if (page === "landing") return (
     <main className="landing" style={{"--accent":accent}}>
