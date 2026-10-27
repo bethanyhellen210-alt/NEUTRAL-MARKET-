@@ -33,6 +33,7 @@ export default function Home() {
   const [scannerResult, setScannerResult] = useState(null);
   const [scannerLoading, setScannerLoading] = useState(false);
   const [scannerTimeframe, setScannerTimeframe] = useState("15m");
+  const [scannerRefresh, setScannerRefresh] = useState(0);
   const [newsItems, setNewsItems] = useState([
     { title: "Welcome to NexusFX", body: "Admin announcements will appear here once the news service is configured.", date: "Platform notice" },
   ]);
@@ -81,7 +82,7 @@ export default function Home() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [tab, symbol, scannerTimeframe]);
+  }, [tab, symbol, scannerTimeframe, scannerRefresh]);
 
   const tabContent = useMemo(() => {
     if (tab === "dashboard") return (
@@ -145,7 +146,7 @@ export default function Home() {
         <div className="scanner-controls">
           <div><label className="field-label" htmlFor="scannerSymbol">Symbol</label><select id="scannerSymbol" value={symbol} onChange={e => setSymbol(e.target.value)}><option>EURUSD</option><option>GBPUSD</option><option>USDJPY</option><option>USDCHF</option><option>AUDUSD</option><option>USDCAD</option><option>NZDUSD</option><option>XAUUSD</option></select></div>
           <div><label className="field-label" htmlFor="scannerTimeframe">Timeframe</label><select id="scannerTimeframe" value={scannerTimeframe} onChange={e => setScannerTimeframe(e.target.value)}><option value="5m">M5</option><option value="15m">M15</option><option value="30m">M30</option><option value="1h">H1</option><option value="4h">H4</option></select></div>
-          <button className="outline scan-refresh" onClick={() => {setScannerResult(null);setTab("dashboard");setTimeout(()=>setTab("scanner"),0);}}>Refresh analysis</button>
+          <button className="outline scan-refresh" onClick={() => {setScannerResult(null);setScannerRefresh(value => value + 1);}}>Refresh analysis</button>
         </div>
         {scannerLoading && <p className="muted">Requesting latest candles and recalculating indicators…</p>}
         {scannerResult?.error && <p className="inline-message">{scannerResult.error} {scannerResult.detail || ""}</p>}
@@ -179,7 +180,7 @@ export default function Home() {
     if (tab === "settings") return <section className="panel"><div className="eyebrow">PERSONALIZE WORKSPACE</div><h2>Settings</h2><p className="muted">Choose your accent colour.</p><div className="theme-options">{[["gold","#e7c66d","Gold"],["blue","#75baff","Blue"],["mint","#80d6a1","Mint"]].map(([id,color,label])=><button key={id} className={theme===id?"theme-choice active":"theme-choice"} onClick={()=>setTheme(id)}><span style={{background:color}}></span>{label}</button>)}</div><div className="risk-note"><strong>Security</strong><span>Authentication, subscription management and API secrets will be managed server-side; never paste a MetaApi token into this page.</span></div></section>;
     if (tab === "news") return <section className="panel"><div className="eyebrow">ADMIN ANNOUNCEMENTS</div><h2>News & Updates</h2><p className="muted">Updates published by the NexusFX administrator will appear here.</p>{newsItems.map((n,i)=><article className="news-card" key={i}><span className="eyebrow">{n.date}</span><h3>{n.title}</h3><p>{n.body}</p></article>)}</section>;
     return null;
-  }, [tab, accountMode, maxTrades, lotSize, symbol, message, brokerStatus, theme, titleMode, newsItems, scannerResult, scannerLoading, scannerTimeframe]);
+  }, [tab, accountMode, maxTrades, lotSize, symbol, message, brokerStatus, theme, titleMode, newsItems, scannerResult, scannerLoading, scannerTimeframe, scannerRefresh]);
 
   if (page === "landing") return (
     <main className="landing" style={{"--accent":accent}}>
