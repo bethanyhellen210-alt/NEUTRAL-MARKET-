@@ -194,7 +194,7 @@ export default function Home() {
 
   if (page === "landing") return (
     <main className="landing" style={{"--accent":accent}}>
-      <header className="topbar landing-top"><a className="brand" href="#"><span className="brand-icon">N</span><span>NEXUS<span className="brand-fx">FX</span><small>FOREX TRADING OS</small></span></a><button className="quiet-button" onClick={() => {setPage("login");setMessage("");}}>Sign in ↗</button></header>
+      <header className="topbar landing-top"><a className="brand" href="#"><span className="brand-icon">N</span><span>NEXUS<span className="brand-fx">FX</span><small>FOREX TRADING OS</small></span></a><button className="quiet-button" onClick={() => {window.location.href="/portal";}}>Sign in ↗</button></header>
       <section className="landing-grid">
         <div className="landing-copy"><div className="eyebrow"><span className="status-dot"></span> AUTOMATED FOREX WORKSPACE</div><h1>Trade with a<br/><span>clearer edge.</span></h1><p className="landing-sub">A focused trading workspace for market scanning, strategy-driven automation, and your connected MT5 account.</p>
           <div className="hero-points"><span>↗ Market scanner</span><span>⌘ MT5 via MetaApi</span><span>◈ Risk controls</span></div>
@@ -202,11 +202,11 @@ export default function Home() {
         </div>
         <div className="plans-column"><div className="plan-heading"><span className="eyebrow">MEMBERSHIP</span><h2>Choose your access</h2><p>Unlock your workspace with a plan or access key.</p></div>
           <div className="plans">{plans.map(plan=><button key={plan.name} className={selectedPlan===plan.name?"plan-card chosen":"plan-card"} onClick={()=>setSelectedPlan(plan.name)}><span className="plan-top"><span>{plan.name}</span>{plan.popular&&<em>POPULAR</em>}</span><span className="plan-price">{plan.price}<small> / {plan.duration}</small></span><span className="plan-foot">{selectedPlan===plan.name?"Selected plan":"Choose plan"} <b>→</b></span></button>)}</div>
-          <div className="currency-note">Currency and checkout are not enabled yet. Prices are provisional.</div>
-          <button className="primary full large-button" onClick={()=>{setPage("login");setMessage("Selected "+selectedPlan+" plan in USD. Secure checkout and subscription activation are not enabled until payment verification and persistent licensing are configured.");}}>Continue with {selectedPlan} <span>→</span></button>
+          <div className="currency-note">Prices in USD · secure checkout</div>
+          <button className="primary full large-button" onClick={()=>{window.location.href="/portal";}}>Continue with {selectedPlan} <span>→</span></button>
           <div className="key-divider"><span></span> OR USE ACCESS KEY <span></span></div>
-          <button className="outline full" onClick={()=>{setPage("login");setMessage("");}}> <span>♢</span> Enter access key</button>
-          <p className="fine-print">Subscription and access-key verification will be handled securely by the server. No payment has been taken.</p>
+          <button className="outline full" onClick={()=>{window.location.href="/portal";}}> <span>♢</span> Sign in or create account</button>
+          <p className="fine-print">Create an account in the subscriber portal to purchase a verified USD subscription and connect your own MT5 account.</p>
         </div>
       </section>
       <footer className="landing-footer"><span>© 2026 NEXUSFX</span><span>MT5 CONNECTIVITY VIA METAAPI</span><span>TRADING INVOLVES RISK</span></footer>
