@@ -71,9 +71,11 @@ export async function GET(request) {
           connection.getPositions(),
           connection.getDealsByTimeRange(new Date(new Date().toISOString().slice(0,10) + "T00:00:00.000Z"), new Date())
         ]);
-        const todayNet = (deals || []).reduce((sum, d) => sum + Number(d.profit || 0) + Number(d.commission || 0) + Number(d.swap || 0), 0);
+        const tradeDeals = (deals || []).filter(d => ["DEAL_TYPE_BUY", "DEAL_TYPE_SELL", "buy", "sell"].includes(String(d.type || "").toLowerCase()) || ["DEAL_TYPE_BUY", "DEAL_TYPE_SELL"].includes(String(d.type || "").toUpperCase()));
+        const todayNet = tradeDeals.reduce((sum, d) => sum + Number(d.profit || 0) + Number(d.commission || 0) + Number(d.swap || 0), 0);
         const floating = (positions || []).reduce((sum, p) => sum + Number(p.profit || 0) + Number(p.swap || 0) + Number(p.commission || 0), 0);
-        const maxLoss = Number(info.balance) * Number(item.max_daily_loss_percent) / 100;
+        const estimatedDayStartBalance = Math.max(0, Number(info.balance) - todayNet);
+        const maxLoss = estimatedDayStartBalance * Number(item.max_daily_loss_percent) / 100;
         if (todayNet + floating <= -maxLoss) {
           await client.query("UPDATE trading_settings SET auto_enabled = FALSE, live_trading_enabled = FALSE, updated_at = NOW() WHERE user_id = $1", [item.user_id]);
           await client.query(
