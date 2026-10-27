@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
+    if (!process.env.METAAPI_TOKEN) return Response.json({ error: "METAAPI_TOKEN is not configured." }, { status: 503, headers: { "Cache-Control": "no-store" } });
     const user = await requireUser();
     await requireSubscription(user.id);
     const linked = await query(
