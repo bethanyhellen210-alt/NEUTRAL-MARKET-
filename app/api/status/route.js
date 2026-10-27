@@ -1,4 +1,4 @@
-import MetaApi from "metaapi.cloud-sdk";
+import MetaApi from "metaapi.cloud-sdk/esm-node";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
