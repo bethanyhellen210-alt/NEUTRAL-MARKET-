@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test",
-    "test:strategy": "node --test tests/strategy.test.js"
+    "test": "node --experimental-default-type=module --test",
+    "test:strategy": "node --experimental-default-type=module --test tests/strategy.test.js"
   },
   "dependencies": {
     "next": "^15.5.6",
