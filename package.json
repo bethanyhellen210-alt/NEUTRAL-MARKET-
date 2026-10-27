@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --test",
+    "test:strategy": "node --test tests/strategy.test.js"
   },
   "dependencies": {
     "next": "^15.5.6",
