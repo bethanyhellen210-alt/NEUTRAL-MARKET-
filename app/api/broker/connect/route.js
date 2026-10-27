@@ -20,8 +20,8 @@ export async function POST(request) {
       return Response.json({ error: "Enter the exact MT5 broker server name." }, { status: 400 });
     }
     if (!mode) return Response.json({ error: "Choose Demo or Real account mode." }, { status: 400 });
-    if (mode === "real" && (!confirmedReal || process.env.LIVE_TRADING_ENABLED !== "true")) {
-      return Response.json({ error: "Real-account linking requires explicit confirmation and platform live-trading approval. Real trading remains disabled until production checks pass." }, { status: 403 });
+    if (mode === "real" && !confirmedReal) {
+      return Response.json({ error: "Confirm that you own this real MT5 account before linking it. Order execution remains separately disabled until platform approval." }, { status: 403 });
     }
     const existing = await query("SELECT id FROM broker_accounts WHERE user_id = $1 AND status <> 'revoked' LIMIT 1", [user.id]);
     if (existing.rowCount) return Response.json({ error: "An MT5 account is already linked. Revoke it before linking another account." }, { status: 409 });
